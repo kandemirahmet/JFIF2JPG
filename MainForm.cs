@@ -6,6 +6,13 @@ public partial class MainForm : Form
     {
         InitializeComponent();
         browseButton.Click += BrowseButton_Click;
+        DragEnter += MainForm_DragEnter;
+        DragDrop += MainForm_DragDrop;
+        ConfigureDropTarget(contentLayout);
+        ConfigureDropTarget(dropLabel);
+        ConfigureDropTarget(orLabel);
+        ConfigureDropTarget(browseButton);
+        ConfigureDropTarget(statusStrip);
     }
 
     private void BrowseButton_Click(object? sender, EventArgs e)
@@ -14,7 +21,7 @@ public partial class MainForm : Form
         {
             Filter = "JFIF files (*.jfif)|*.jfif|All files (*.*)|*.*",
             Multiselect = true,
-            Title = "Select JFIF Files to Convert"
+            Title = "Select JFIF Files"
         };
 
         if (openFileDialog.ShowDialog(this) != DialogResult.OK)
@@ -22,7 +29,36 @@ public partial class MainForm : Form
             return;
         }
 
-        RenameResult result = RenameJfifFiles(openFileDialog.FileNames);
+        ProcessJfifFiles(openFileDialog.FileNames);
+    }
+
+    private void MainForm_DragEnter(object? sender, DragEventArgs e)
+    {
+        e.Effect = GetDroppedJfifFilePaths(e.Data).Length > 0
+            ? DragDropEffects.Copy
+            : DragDropEffects.None;
+    }
+
+    private void MainForm_DragDrop(object? sender, DragEventArgs e)
+    {
+        string[] droppedJfifFilePaths = GetDroppedJfifFilePaths(e.Data);
+
+        if (droppedJfifFilePaths.Length > 0)
+        {
+            ProcessJfifFiles(droppedJfifFilePaths);
+        }
+    }
+
+    private void ConfigureDropTarget(Control control)
+    {
+        control.AllowDrop = true;
+        control.DragEnter += MainForm_DragEnter;
+        control.DragDrop += MainForm_DragDrop;
+    }
+
+    private void ProcessJfifFiles(IEnumerable<string> filePaths)
+    {
+        RenameResult result = RenameJfifFiles(filePaths);
         statusLabel.Text = result.FailureCount == 0
             ? $"{result.SuccessCount} {FileLabel(result.SuccessCount)} renamed"
             : $"{result.SuccessCount} {FileLabel(result.SuccessCount)} renamed, {result.FailureCount} {FileLabel(result.FailureCount)} failed";
@@ -37,6 +73,19 @@ public partial class MainForm : Form
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);
         }
+    }
+
+    private static string[] GetDroppedJfifFilePaths(IDataObject? data)
+    {
+        if (data?.GetData(DataFormats.FileDrop) is not string[] filePaths)
+        {
+            return [];
+        }
+
+        return filePaths
+            .Where(filePath => File.Exists(filePath))
+            .Where(filePath => string.Equals(Path.GetExtension(filePath), ".jfif", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
     }
 
     private static RenameResult RenameJfifFiles(IEnumerable<string> filePaths)
