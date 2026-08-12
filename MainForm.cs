@@ -59,9 +59,7 @@ public partial class MainForm : Form
     private void ProcessJfifFiles(IEnumerable<string> filePaths)
     {
         RenameResult result = RenameJfifFiles(filePaths);
-        statusLabel.Text = result.FailureCount == 0
-            ? $"{result.SuccessCount} {FileLabel(result.SuccessCount)} renamed"
-            : $"{result.SuccessCount} {FileLabel(result.SuccessCount)} renamed, {result.FailureCount} {FileLabel(result.FailureCount)} failed";
+        statusLabel.Text = CreateStatusMessage(result);
 
         if (result.ConflictingFileNames.Count > 0)
         {
@@ -73,6 +71,26 @@ public partial class MainForm : Form
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);
         }
+    }
+
+    private static string CreateStatusMessage(RenameResult result)
+    {
+        List<string> statusParts =
+        [
+            $"{result.RenamedCount} {FileLabel(result.RenamedCount)} renamed"
+        ];
+
+        if (result.SkippedCount > 0)
+        {
+            statusParts.Add($"{result.SkippedCount} {FileLabel(result.SkippedCount)} skipped");
+        }
+
+        if (result.FailedCount > 0)
+        {
+            statusParts.Add($"{result.FailedCount} {FileLabel(result.FailedCount)} failed");
+        }
+
+        return string.Join(", ", statusParts);
     }
 
     private static string[] GetDroppedJfifFilePaths(IDataObject? data)
@@ -90,54 +108,77 @@ public partial class MainForm : Form
 
     private static RenameResult RenameJfifFiles(IEnumerable<string> filePaths)
     {
-        int successCount = 0;
-        int failureCount = 0;
-        List<string> conflictingFileNames = [];
+        List<FileRenameResult> fileResults = [];
 
         foreach (string filePath in filePaths)
         {
-            if (!string.Equals(Path.GetExtension(filePath), ".jfif", StringComparison.OrdinalIgnoreCase))
-            {
-                failureCount++;
-                continue;
-            }
-
-            string targetPath = Path.ChangeExtension(filePath, ".jpg");
-
-            if (File.Exists(targetPath))
-            {
-                failureCount++;
-                conflictingFileNames.Add(Path.GetFileName(targetPath));
-                continue;
-            }
-
-            try
-            {
-                File.Move(filePath, targetPath);
-                successCount++;
-            }
-            catch (IOException)
-            {
-                failureCount++;
-
-                if (File.Exists(targetPath))
-                {
-                    conflictingFileNames.Add(Path.GetFileName(targetPath));
-                }
-            }
-            catch (UnauthorizedAccessException)
-            {
-                failureCount++;
-            }
+            fileResults.Add(RenameJfifFile(filePath));
         }
 
-        return new RenameResult(successCount, failureCount, conflictingFileNames);
+        return new RenameResult(fileResults);
+    }
+
+    private static FileRenameResult RenameJfifFile(string filePath)
+    {
+        if (!string.Equals(Path.GetExtension(filePath), ".jfif", StringComparison.OrdinalIgnoreCase))
+        {
+            return new FileRenameResult(
+                filePath,
+                null,
+                FileRenameOutcome.Failed,
+                "Only .jfif files can be renamed.");
+        }
+
+        string targetPath = Path.ChangeExtension(filePath, ".jpg");
+
+        if (File.Exists(targetPath))
+        {
+            return new FileRenameResult(filePath, targetPath, FileRenameOutcome.TargetExists);
+        }
+
+        try
+        {
+            File.Move(filePath, targetPath);
+            return new FileRenameResult(filePath, targetPath, FileRenameOutcome.Renamed);
+        }
+        catch (IOException exception)
+        {
+            return File.Exists(targetPath)
+                ? new FileRenameResult(filePath, targetPath, FileRenameOutcome.TargetExists)
+                : new FileRenameResult(filePath, targetPath, FileRenameOutcome.Failed, exception.Message);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return new FileRenameResult(filePath, targetPath, FileRenameOutcome.Failed, exception.Message);
+        }
     }
 
     private static string FileLabel(int count) => count == 1 ? "file" : "files";
 
-    private sealed record RenameResult(
-        int SuccessCount,
-        int FailureCount,
-        IReadOnlyList<string> ConflictingFileNames);
+    private enum FileRenameOutcome
+    {
+        Renamed,
+        TargetExists,
+        Failed
+    }
+
+    private sealed record FileRenameResult(
+        string SourcePath,
+        string? TargetPath,
+        FileRenameOutcome Outcome,
+        string? FailureMessage = null);
+
+    private sealed record RenameResult(IReadOnlyList<FileRenameResult> FileResults)
+    {
+        public int RenamedCount => FileResults.Count(result => result.Outcome == FileRenameOutcome.Renamed);
+
+        public int SkippedCount => FileResults.Count(result => result.Outcome == FileRenameOutcome.TargetExists);
+
+        public int FailedCount => FileResults.Count(result => result.Outcome == FileRenameOutcome.Failed);
+
+        public IReadOnlyList<string> ConflictingFileNames => FileResults
+            .Where(result => result.Outcome == FileRenameOutcome.TargetExists)
+            .Select(result => Path.GetFileName(result.TargetPath!))
+            .ToArray();
+    }
 }
