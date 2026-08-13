@@ -11,6 +11,10 @@ partial class MainForm
     private Label dropLabel = null!;
     private Label orLabel = null!;
     private Button browseButton = null!;
+    private Panel resultPanel = null!;
+    private TableLayoutPanel resultLayout = null!;
+    private Label resultSummaryLabel = null!;
+    private Button failureDetailsButton = null!;
     private StatusStrip statusStrip = null!;
     private ToolStripStatusLabel statusLabel = null!;
 
@@ -41,9 +45,15 @@ partial class MainForm
         dropLabel = new Label();
         orLabel = new Label();
         browseButton = new Button();
+        resultPanel = new Panel();
+        resultLayout = new TableLayoutPanel();
+        resultSummaryLabel = new Label();
+        failureDetailsButton = new Button();
         statusStrip = new StatusStrip();
         statusLabel = new ToolStripStatusLabel();
         contentLayout.SuspendLayout();
+        resultPanel.SuspendLayout();
+        resultLayout.SuspendLayout();
         statusStrip.SuspendLayout();
         SuspendLayout();
         // 
@@ -54,12 +64,14 @@ partial class MainForm
         contentLayout.Controls.Add(dropLabel, 0, 1);
         contentLayout.Controls.Add(orLabel, 0, 2);
         contentLayout.Controls.Add(browseButton, 0, 3);
+        contentLayout.Controls.Add(resultPanel, 0, 4);
         contentLayout.Dock = DockStyle.Fill;
         contentLayout.Location = new Point(0, 0);
         contentLayout.Name = "contentLayout";
         contentLayout.Padding = new Padding(24);
-        contentLayout.RowCount = 5;
+        contentLayout.RowCount = 6;
         contentLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+        contentLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         contentLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         contentLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         contentLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -106,6 +118,58 @@ partial class MainForm
         browseButton.Text = "Select Files";
         browseButton.UseVisualStyleBackColor = true;
         // 
+        // resultPanel
+        // 
+        resultPanel.BackColor = SystemColors.ControlLightLight;
+        resultPanel.BorderStyle = BorderStyle.FixedSingle;
+        resultPanel.Controls.Add(resultLayout);
+        resultPanel.Dock = DockStyle.Fill;
+        resultPanel.Location = new Point(27, 322);
+        resultPanel.Margin = new Padding(3, 16, 3, 3);
+        resultPanel.Name = "resultPanel";
+        resultPanel.Size = new Size(830, 70);
+        resultPanel.TabIndex = 3;
+        // 
+        // resultLayout
+        // 
+        resultLayout.ColumnCount = 1;
+        resultLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        resultLayout.Controls.Add(resultSummaryLabel, 0, 0);
+        resultLayout.Controls.Add(failureDetailsButton, 0, 1);
+        resultLayout.Dock = DockStyle.Fill;
+        resultLayout.Location = new Point(0, 0);
+        resultLayout.Name = "resultLayout";
+        resultLayout.RowCount = 2;
+        resultLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        resultLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        resultLayout.Size = new Size(828, 68);
+        resultLayout.TabIndex = 0;
+        // 
+        // resultSummaryLabel
+        // 
+        resultSummaryLabel.AutoSize = true;
+        resultSummaryLabel.Dock = DockStyle.Fill;
+        resultSummaryLabel.Location = new Point(3, 3);
+        resultSummaryLabel.Name = "resultSummaryLabel";
+        resultSummaryLabel.Size = new Size(822, 39);
+        resultSummaryLabel.TabIndex = 0;
+        resultSummaryLabel.Text = "Ready to rename .jfif files.";
+        resultSummaryLabel.TextAlign = ContentAlignment.MiddleCenter;
+        // 
+        // failureDetailsButton
+        // 
+        failureDetailsButton.Anchor = AnchorStyles.Top;
+        failureDetailsButton.AutoSize = true;
+        failureDetailsButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        failureDetailsButton.Location = new Point(344, 45);
+        failureDetailsButton.Name = "failureDetailsButton";
+        failureDetailsButton.Padding = new Padding(8, 0, 8, 0);
+        failureDetailsButton.Size = new Size(140, 23);
+        failureDetailsButton.TabIndex = 1;
+        failureDetailsButton.Text = "View failure details";
+        failureDetailsButton.UseVisualStyleBackColor = true;
+        failureDetailsButton.Visible = false;
+        // 
         // statusStrip
         // 
         statusStrip.Items.AddRange(new ToolStripItem[] { statusLabel });
@@ -135,6 +199,9 @@ partial class MainForm
         Text = "JFIF2JPG";
         contentLayout.ResumeLayout(false);
         contentLayout.PerformLayout();
+        resultPanel.ResumeLayout(false);
+        resultLayout.ResumeLayout(false);
+        resultLayout.PerformLayout();
         statusStrip.ResumeLayout(false);
         statusStrip.PerformLayout();
         ResumeLayout(false);
