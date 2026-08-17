@@ -1,3 +1,5 @@
+using System.Drawing;
+
 namespace JFIF2JPG;
 
 public partial class MainForm : Form
@@ -12,6 +14,7 @@ public partial class MainForm : Form
     public MainForm()
     {
         InitializeComponent();
+        Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         defaultContentBackColor = contentLayout.BackColor;
         defaultDropLabelForeColor = dropLabel.ForeColor;
         defaultDropLabelText = dropLabel.Text;
